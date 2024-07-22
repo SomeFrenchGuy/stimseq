@@ -1,3 +1,7 @@
+# ignore docx files
+*.docx
+
+
 # Prerequisites
 *.d
 
