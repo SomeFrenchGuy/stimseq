@@ -5,8 +5,17 @@
 Placeholder
 
 ## How to Setup development environment
+### Windows
 
-Placeholder
+TODO
+
+### Linux
+Instructions for Ubuntu 22.04
+
+- Download [this](https://www.ni.com/fr/support/downloads/drivers/download.ni-linux-device-drivers.html#537454)
+- Open [this](https://www.ni.com/docs/fr-FR/bundle/ni-platform-on-linux-desktop/page/installing-ni-products-ubuntu.html) instruction page
+- Follow instructions 1,2 and 3 using .deb file for ubuntu 2204
+- Follow the rest to install `ni-daqmx` package
 
 ## How to Compile the code
 
@@ -29,6 +38,8 @@ Placeholder
 - [LED Driver Thorlab LEDD1B](https://www.thorlabs.com/newgrouppage9.cfm?objectgroup_id=2616&pn=LEDD1B#3018)
 - [ValveLink 8.2 pinout](/doc/ValveLink8.2%20pinout.pdf)
 
-### Needed Lib
+### Needed
 
-- [daqmx driver](https://www.ni.com/fr/support/downloads/drivers/download.ni-daq-mx.html#523625)
+- [NI driver](https://www.ni.com/docs/fr-FR/bundle/ni-platform-on-linux-desktop/page/installing-ni-products-ubuntu.html)
+- cmake
+- git
