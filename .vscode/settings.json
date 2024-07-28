@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "nidaqmx.h": "c",
+        "arg_parser.h": "c",
+        "stdio.h": "c"
+    }
+}
