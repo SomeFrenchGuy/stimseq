@@ -1,3 +1,7 @@
+# ignore build directories
+code/src/obj
+code/src/bin
+
 # ignore docx files
 *.docx
 
