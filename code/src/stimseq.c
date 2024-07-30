@@ -1,21 +1,23 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "stimseq.h"
 #include "arg_parser.h"
 
 #include "logger.h"
 
-/* Generic Example using DAQmx */
+
+void init_logger(char* exe_path);
 
 int main(int argc, char **argv)
 {
-    //printf("Welcome to StimSeq\n");
     ParsedArgs cli_args = parse_arguments(argc, argv);
 
-    set_log_file("./log.txt");
-    init_log_file();
+    printf("Welcome to StimSeq\n");
+
+    init_logger(argv[0]);
 
     print_log(INFO, "Test");
     print_log(WARNING, "Test");
@@ -30,4 +32,16 @@ int main(int argc, char **argv)
     }
 
     return 0;
+}
+
+void init_logger(char* exe_path)
+{
+    // Init Logger
+    char * log_path = malloc(sizeof(exe_path) + sizeof("_log.txt"));
+    strcpy(log_path, exe_path);
+    strcat(log_path, "_log.txt");
+    set_log_file(log_path);
+    init_log_file();
+    free(log_path);
+
 }
