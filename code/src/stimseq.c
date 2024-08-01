@@ -5,8 +5,8 @@
 
 #include "stimseq.h"
 #include "arg_parser.h"
-
 #include "logger.h"
+#include "sequence_parser.h"
 
 bool ask_sequence_file_path(char *sequence_file_path);
 void init_logger(char* exe_path);
@@ -14,7 +14,7 @@ void init_logger(char* exe_path);
 int main(int argc, char **argv)
 {
     ParsedArgs cli_args = parse_arguments(argc, argv);
-    FILE sequence_file;
+    TimeStep *sequence = NULL;
 
     printf("********************************\n");
     printf("****** Welcome to StimSeq ******\n");
@@ -39,7 +39,7 @@ int main(int argc, char **argv)
         }
     }
 
-
+    parse_sequence_file(cli_args.path, sequence);
 
     return 0;
 }

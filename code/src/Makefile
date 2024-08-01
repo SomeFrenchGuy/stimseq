@@ -10,7 +10,7 @@ OBJ_DIR=./obj
 _DEPS = stimseq.h
 DEPS = $(patsubst %,$(INCLUDE_DIR)/%,$(_DEPS))
 
-_OBJ = stimseq.o arg_parser.o logger.o
+_OBJ = stimseq.o arg_parser.o logger.o sequence_parser.o
 OBJ = $(patsubst %,$(OBJ_DIR)/%,$(_OBJ))
 
 
