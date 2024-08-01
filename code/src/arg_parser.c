@@ -4,9 +4,9 @@
 #include <getopt.h>
 
 #include "arg_parser.h"
+#include "logger.h"
 
 
-bool check_path_valid(const char *path);
 
 ParsedArgs parse_arguments(int argc, char **argv)
 {
@@ -36,12 +36,22 @@ ParsedArgs parse_arguments(int argc, char **argv)
             {
                 strcpy(arguments.loglevel, optarg);
 
-                if ((strcmp(arguments.loglevel, "WARNING") != 0) && (strcmp(arguments.loglevel, "DEBUG") != 0))
+                if ((strcmp(optarg, "WARNING") != 0) && (strcmp(optarg, "DEBUG") != 0))
                 {
-                    printf("ERROR: %s is not a valid log level\n", arguments.loglevel);
+                    printf("ERROR: %s is not a valid log level\n", optarg);
                     printf("       Valid values are 'WARNING' and 'DEBUG'\n");
                     arguments.all_args_valid = false;
                 }
+                else if (strcmp(optarg, "WARNING") == 0)
+                {
+                    display_log_lvl(WARNING, true);
+                }
+                else if (strcmp(optarg, "DEBUG"))
+                {
+                    display_log_lvl(WARNING, true);
+                    display_log_lvl(DEBUG, true);
+                }
+                
             }
             break;
 
