@@ -49,8 +49,7 @@ void print_log (LogLvl log_lvl, char *msg)
     strftime(date, 100, "[%F %T]", localtime(&t));
 
     // Allocate space for full_msg string DON'T FORGET TO FREE
-    char* full_msg = (char*)malloc(sizeof(date) + sizeof(msg) + sizeof("[WARNING]: "));
-
+    char* full_msg = (char*)malloc((strlen(date) + strlen(msg)) * sizeof(char) + sizeof("[WARNING]: \n"));
 
     switch (log_lvl)
     {
