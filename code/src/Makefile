@@ -10,7 +10,7 @@ OBJ_DIR=./obj
 _DEPS = stimseq.h
 DEPS = $(patsubst %,$(INCLUDE_DIR)/%,$(_DEPS))
 
-_OBJ = stimseq.o arg_parser.o 
+_OBJ = stimseq.o arg_parser.o logger.o
 OBJ = $(patsubst %,$(OBJ_DIR)/%,$(_OBJ))
 
 
@@ -23,5 +23,5 @@ $(BIN_DIR)/stimseq: $(OBJ)
 .PHONY: clean
 
 clean:
-	rm -f $(OBJ_DIR)/*.o *~ core $(INCDIR)/*~ 
-	rm -f $(BIN_DIR)/*.o *~ core $(INCDIR)/*~ 
+	rm -f $(OBJ_DIR)/* *~ core $(INCDIR)/*~ 
+	rm -f $(BIN_DIR)/* *~ core $(INCDIR)/*~ 
