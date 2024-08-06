@@ -1,15 +1,19 @@
-*time step (ms),V1(H20 bot), V2(Water), V3(Odor1), V4(Odor2), V5(Odor3), V6(Odor4), V7(Odor5), V8(H20 top), LED Voltage, comment
-0,1,1,0,0,0,0,0,1,0,Standby
-20,1,1,1,0,0,0,0,0,0,Prepare Odor1
-40,0,1,1,0,0,0,0,1,0,Switch On Odor1
-50,0,1,1,0,0,0,0,1,5
-70,1,1,0,0,0,0,0,1,5,Switch Off Odor1
-80,1,1,0,0,0,0,0,1,0,
+*time step (ms),V1(H20 bot), V2(Water), V3(Odor1), V4(Odor2), V5(Odor3), V6(Odor4), V7(Odor5), V8(H20 top), LED Voltage, piezo, comment
+0,1,1,0,0,0,0,0,1,0,0,Standby
+20,1,1,1,0,0,0,0,0,0,0,Prepare Odor1
+40,0,1,1,0,0,0,0,1,0,0,Switch On Odor1
+50,0,1,1,0,0,0,0,1,5,0
+1,0,0,0,0,1,5,0
+70,1,1,0,0,0,0,0,1,5,0,Switch Off Odor1
+80,1,1,0,0,0,0,0,1,0,0
+80,1,1,terd,0,0,0,0,1,0,0
 
-90,1,1,0,0,0,0,0,1,0,
+90,1,1,0,0,0,0,0,1,0,1
 
 * Informations about this template :
 *   - Lignes starting with a * character are ignored by stimseq
 *   - Empty Lines are ignored by stimseq
-*   - Comment column can be left empty, with or without a final comma.
+*   - Incomplete lines will trigger errors (ex: 120, 0, 1, 5)
+*   - Comment column can be left empty with or without a final comma.
 *     The parser of stimseq will handle it
+*   - Columns V1 to V8 and piezo will accept 0 for false and 1 for true. Any value above 1 will be treated as a one.
