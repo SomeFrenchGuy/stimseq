@@ -16,6 +16,6 @@ typedef struct TimeStep
 } TimeStep;
 
 
-int parse_sequence_file(char *file_path, TimeStep *sequence);
+int parse_sequence_file(char *file_path, TimeStep **sequence);
 
 #endif

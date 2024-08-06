@@ -15,9 +15,11 @@ OBJ = $(patsubst %,$(OBJ_DIR)/%,$(_OBJ))
 
 
 $(OBJ_DIR)/%.o: %.c $(DEPS)
+	mkdir -p $(OBJ_DIR)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(BIN_DIR)/stimseq: $(OBJ)
+	mkdir -p $(BIN_DIR)
 	$(CC) -o $@ $^ $(CFLAGS) 
 
 .PHONY: clean

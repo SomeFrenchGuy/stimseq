@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "stimseq.h"
 #include "arg_parser.h"
@@ -14,11 +15,9 @@ void init_logger(char* exe_path);
 int main(int argc, char **argv)
 {
     ParsedArgs cli_args = parse_arguments(argc, argv);
-    TimeStep *sequence = NULL;
 
-    printf("********************************\n");
-    printf("****** Welcome to StimSeq ******\n");
-    printf("********************************\n");
+    TimeStep *sequence = (TimeStep *) malloc(0);
+    int sequence_size = 0;
 
     // Init log file
     init_logger(argv[0]);
@@ -26,9 +25,13 @@ int main(int argc, char **argv)
     // Exit early if invalid arguments were given
     if (cli_args.all_args_valid == false)
     {
-        print_log(ERROR, "Incorrect command line arguments were given");
         return -1;
     }
+
+    printf("********************************\n");
+    printf("****** Welcome to StimSeq ******\n");
+    printf("********************************\n");
+
 
     if (strcmp(cli_args.path, "") == 0)
     {
@@ -39,7 +42,14 @@ int main(int argc, char **argv)
         }
     }
 
-    parse_sequence_file(cli_args.path, sequence);
+    // Parse the sequence file and exit in case of error
+    sequence_size = parse_sequence_file(cli_args.path, &sequence);
+    if (sequence_size <= 0)
+    {
+        return -1;
+    }
+
+    free(sequence);
 
     return 0;
 }

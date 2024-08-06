@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <string.h>
 #include <time.h>
@@ -37,10 +38,24 @@ void set_log_file(const char* path_to_log_file)
 
 
 // A simple log function to log messages to a file
-void print_log (LogLvl log_lvl, char *msg)
+void print_log (LogLvl log_lvl, const char* str, ... )
 {
     // Initialize and get current time
     time_t t = time( NULL );
+
+    // Prepare variable length args list
+    va_list args;
+    va_start( args, str );
+
+    // No way to determine size of list
+    // This will hold a stacktrace of 15 lines plus a message
+    int max_va_list_size = 4146;
+    // Allocate args string variable
+    char* va_msg = (char*)malloc( strlen( str ) + max_va_list_size );
+
+    // Construct final args string
+    int va_string_size = vsnprintf( va_msg, strlen( str ) + max_va_list_size, str, args );
+
 
     // Allocate space for date string DON'T FORGET TO FREE
     char* date = (char*)malloc( 100 );
@@ -49,14 +64,14 @@ void print_log (LogLvl log_lvl, char *msg)
     strftime(date, 100, "[%F %T]", localtime(&t));
 
     // Allocate space for full_msg string DON'T FORGET TO FREE
-    char* full_msg = (char*)malloc((strlen(date) + strlen(msg)) * sizeof(char) + sizeof("[WARNING]: \n"));
+    char* full_msg = (char*)malloc((strlen(date) + strlen(va_msg)) * sizeof(char) + sizeof("[WARNING]: \n"));
 
     switch (log_lvl)
     {
     case INFO:
         if (show_info)
         {
-            sprintf(full_msg, "%s[INFO]: %s\n", date, msg);
+            sprintf(full_msg, "%s[INFO]: %s\n", date, va_msg);
             printf("%s", full_msg);
             write_to_log_file(full_msg);
         }
@@ -65,7 +80,7 @@ void print_log (LogLvl log_lvl, char *msg)
     case WARNING:
         if (show_warning)
         {
-            sprintf(full_msg, "%s[WARNING]: %s\n", date, msg);
+            sprintf(full_msg, "%s[WARNING]: %s\n", date, va_msg);
             printf("%s", full_msg);
             write_to_log_file(full_msg);
         }
@@ -74,7 +89,7 @@ void print_log (LogLvl log_lvl, char *msg)
     case ERROR:
         if (show_error)
         {
-            sprintf(full_msg, "%s[ERROR]: %s\n", date, msg);
+            sprintf(full_msg, "%s[ERROR]: %s\n", date, va_msg);
             printf("%s", full_msg);
             write_to_log_file(full_msg);
         }
@@ -83,7 +98,7 @@ void print_log (LogLvl log_lvl, char *msg)
     case DEBUG:
         if (show_debug)
         {
-            sprintf(full_msg, "%s[DEBUG]: %s\n", date, msg);
+            sprintf(full_msg, "%s[DEBUG]: %s\n", date, va_msg);
             printf("%s", full_msg);
             write_to_log_file(full_msg);
         }

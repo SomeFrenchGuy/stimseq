@@ -3,8 +3,10 @@
 20,1,1,1,0,0,0,0,0,0,0,Prepare Odor1
 40,0,1,1,0,0,0,0,1,0,0,Switch On Odor1
 50,0,1,1,0,0,0,0,1,5,0
+1,0,0,0,0,1,5,0
 70,1,1,0,0,0,0,0,1,5,0,Switch Off Odor1
 80,1,1,0,0,0,0,0,1,0,0
+80,1,1,terd,0,0,0,0,1,0,0
 
 90,1,1,0,0,0,0,0,1,0,1
 
@@ -14,4 +16,4 @@
 *   - Incomplete lines will trigger errors (ex: 120, 0, 1, 5)
 *   - Comment column can be left empty with or without a final comma.
 *     The parser of stimseq will handle it
-*   - Columns V1 to V8 and piezo will only accept 0 or 1
+*   - Columns V1 to V8 and piezo will accept 0 for false and 1 for true. Any value above 1 will be treated as a one.
