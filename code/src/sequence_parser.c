@@ -56,6 +56,20 @@ int parse_sequence_file(char *file_path, TimeStep **sequence)
                                 (unsigned int*) &buf.piezo_trigger);
 
         print_log(DEBUG,"Parsing row: %i\tNumber of element: %i\t Sequence Size: %i", row_number, match_number, sequence_size);
+        
+        print_log(DEBUG, "Parsed Row: %u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u", \
+                                buf.time,                              \
+                                (unsigned int*) buf.valves[0],         \
+                                (unsigned int*) buf.valves[1],         \
+                                (unsigned int*) buf.valves[2],         \
+                                (unsigned int*) buf.valves[3],         \
+                                (unsigned int*) buf.valves[4],         \
+                                (unsigned int*) buf.valves[5],         \
+                                (unsigned int*) buf.valves[6],         \
+                                (unsigned int*) buf.valves[7],         \
+                                buf.led_voltage,                       \
+                                (unsigned int*) buf.piezo_trigger);
+
         if (match_number != COLUMNS_NB)
         {
             print_log(WARNING, "Skipped Row %i", row_number);

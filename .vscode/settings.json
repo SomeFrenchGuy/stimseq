@@ -3,6 +3,7 @@
         "stdio.h": "c",
         "logger.h": "c",
         "nidaqmx.h": "c",
-        "arg_parser.h": "c"
+        "arg_parser.h": "c",
+        "sequence_parser.h": "c"
     }
 }

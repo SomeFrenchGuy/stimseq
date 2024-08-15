@@ -1,16 +1,19 @@
 INCLUDE_DIR =../include
 BIN_DIR = ./bin
 
+NIDAQLIB_DIR="/usr/lib/x86_64-linux-gnu/"
+NIDAQLIB_NAME="nidaqmx"
+
 CC=gcc
 
-CFLAGS=-I$(INCLUDE_DIR)
+CFLAGS=-I$(INCLUDE_DIR) -L ${NIDAQLIB_DIR} -l ${NIDAQLIB_NAME}
 
 OBJ_DIR=./obj
 
 _DEPS = stimseq.h
 DEPS = $(patsubst %,$(INCLUDE_DIR)/%,$(_DEPS))
 
-_OBJ = stimseq.o arg_parser.o logger.o sequence_parser.o
+_OBJ = stimseq.o arg_parser.o logger.o sequence_parser.o sequence_loader.o
 OBJ = $(patsubst %,$(OBJ_DIR)/%,$(_OBJ))
 
 
