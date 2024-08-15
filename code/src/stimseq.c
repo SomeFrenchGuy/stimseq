@@ -8,16 +8,20 @@
 #include "arg_parser.h"
 #include "logger.h"
 #include "sequence_parser.h"
+#include "sequence_loader.h"
 
-bool ask_sequence_file_path(char *sequence_file_path);
-void init_logger(char* exe_path);
+static bool ask_sequence_file_path(char *sequence_file_path);
+static void init_logger(char* exe_path);
+
+
 
 int main(int argc, char **argv)
 {
-    ParsedArgs cli_args = parse_arguments(argc, argv);
-
     TimeStep *sequence = (TimeStep *) malloc(0);
     int sequence_size = 0;
+
+    // Parse cli arguments
+    ParsedArgs cli_args = parse_arguments(argc, argv);
 
     // Init log file
     init_logger(argv[0]);
@@ -32,7 +36,7 @@ int main(int argc, char **argv)
     printf("****** Welcome to StimSeq ******\n");
     printf("********************************\n");
 
-
+    // Ask the user to manually specify a sequence file if none were given through cli
     if (strcmp(cli_args.path, "") == 0)
     {
         if (!ask_sequence_file_path(cli_args.path))
@@ -46,16 +50,28 @@ int main(int argc, char **argv)
     sequence_size = parse_sequence_file(cli_args.path, &sequence);
     if (sequence_size <= 0)
     {
-        return -1;
+        goto Error;
     }
 
+    if (!load_sequence(sequence, sequence_size))
+    {
+        goto Error;
+    }
+
+    // Free memory used to store sequence
     free(sequence);
 
     return 0;
+Error:
+
+    // Free memory used to store sequence
+    free(sequence);
+    return -1;
+
 }
 
 // Method to ask the user to manually enter a path, up to 3 time
-bool ask_sequence_file_path(char *sequence_file_path)
+static bool ask_sequence_file_path(char *sequence_file_path)
 {
     int i;
     for (i = 0; i < 3; i ++)
@@ -77,14 +93,12 @@ bool ask_sequence_file_path(char *sequence_file_path)
     if (i == 3)
     {
         return false;
-        print_log(ERROR, "No valid log file were given, exit...");
-        return -1;
     }
     
     return true;
 }
 
-void init_logger(char* exe_path)
+static void init_logger(char* exe_path)
 {
     // Init Logger
     char * log_path = malloc(sizeof(exe_path) + sizeof("_log.txt"));
