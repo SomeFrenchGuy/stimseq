@@ -2,7 +2,7 @@ INCLUDE_DIR =../include
 BIN_DIR = ./bin
 
 NIDAQLIB_DIR="C:/Program\ Files\ (x86)/National\ Instruments/NI-DAQ/DAQmx\ ANSI\ C\ Dev/include"
-NIDAQLIB_NAME="nidaqmx"
+NIDAQLIB_NAME="C:/Program\ Files\ (x86)/National\ Instruments/Shared/ExternalCompilerSupport/C/lib64/gcc/libnidaqmx.so"
 
 CC=gcc
 
