@@ -27,7 +27,8 @@
 #define DAQmxErrChk(functionCall) if( DAQmxFailed(error=(functionCall)) ) goto Error; else
 
 // The task handler for DAQmx
-static TaskHandle  task_handle = 0;
+static TaskHandle  task_handle_do = 0;
+static TaskHandle  task_handle_ao = 0;
 
 
 static int pack(bool array [], unsigned int size, bool little_endian);
@@ -76,38 +77,53 @@ bool load_sequence(const TimeStep * sequence, const int sequence_size)
         do_samples[2*i + 1] = sequence[j].piezo_trigger;
     }
 
-    // print_log(DEBUG, "    | Timestamp | Led Voltage | Piezo | Valves");
-    // for (int i = 0; i < sample_number; i++)
-    // {
-    //     print_log(DEBUG, "%4i|%11i|%13i|%7i| %i", i, time_stamp[i], led_voltage[i], do_samples[2*i + 1], do_samples[2*i]);
-    // }
+    print_log(DEBUG, "    | Timestamp | Led Voltage | Piezo | Valves");
+    for (int i = 0; i < sample_number; i++)
+    {
+        print_log(DEBUG, "%4i|%11i|%13i|%7i| %i", i, time_stamp[i], led_voltage[i], do_samples[2*i + 1], do_samples[2*i]);
+    }
 
-    // DAQmx analog voltage channel and timing parameters
-    DAQmxErrChk(DAQmxCreateTask("stimseq", &task_handle));
-
-    // Setup Sample generation timing
-    DAQmxErrChk(DAQmxCfgSampClkTiming(task_handle, NULL, sample_rate, DAQmx_Val_Falling, DAQmx_Val_FiniteSamps, sample_number));
-
-    // Setup trigger signal
-	DAQmxErrChk (DAQmxCfgDigEdgeStartTrig(task_handle, TTL_DI, DAQmx_Val_Rising));
+    // DAQmx task init
+    print_log(DEBUG, "DAQmx - Task init");
+    DAQmxErrChk(DAQmxCreateTask("stimseq Digital Outputs", &task_handle_do));
+    DAQmxErrChk(DAQmxCreateTask("stimseq Analog Outputs", &task_handle_ao));
 
     // Setup Channels
-	DAQmxErrChk(DAQmxCreateDOChan(task_handle, VALVES_DO, "Valves",DAQmx_Val_ChanForAllLines));
-	DAQmxErrChk(DAQmxCreateDOChan(task_handle, PIEZO_DO, "Piezo", DAQmx_Val_ChanPerLine));
-	DAQmxErrChk(DAQmxCreateAOVoltageChan(task_handle, LED_AO, "LED", 0, 10, DAQmx_Val_Volts, NULL));
+    print_log(DEBUG, "DAQmx - Setup Channels");
+	DAQmxErrChk(DAQmxCreateDOChan(task_handle_do, VALVES_DO, "Valves",DAQmx_Val_ChanForAllLines));
+	DAQmxErrChk(DAQmxCreateDOChan(task_handle_do, PIEZO_DO, "Piezo", DAQmx_Val_ChanPerLine));
+	DAQmxErrChk(DAQmxCreateAOVoltageChan(task_handle_ao, LED_AO, "LED", 0, 10, DAQmx_Val_Volts, NULL));
+
+    // Setup Sample generation timing
+    print_log(DEBUG, "DAQmx - Setup Sample generation timing");
+    // DAQmxErrChk(DAQmxCfgSampClkTiming(task_handle_do, "OnboardClock", sample_rate, DAQmx_Val_Falling, DAQmx_Val_FiniteSamps, sample_number));
+    // DAQmxErrChk(DAQmxCfgSampClkTiming(task_handle_ao, "OnboardClock", sample_rate, DAQmx_Val_Falling, DAQmx_Val_FiniteSamps, sample_number));
+    DAQmxErrChk(DAQmxCfgDigEdgeAdvTrig(task_handle_ao, "Dev1/PFI0", DAQmx_Val_Rising));
+    DAQmxErrChk(DAQmxCfgDigEdgeAdvTrig(task_handle_do, "Dev1/PFI0", DAQmx_Val_Rising));
+
+
+    // Setup trigger signal
+    print_log(DEBUG, "DAQmx - Setup trigger signal");
+	DAQmxErrChk (DAQmxCfgDigEdgeStartTrig(task_handle_do, TTL_DI, DAQmx_Val_Rising));
+	DAQmxErrChk (DAQmxCfgDigEdgeStartTrig(task_handle_ao, TTL_DI, DAQmx_Val_Rising));
 
     // Setup sample Generations
-	DAQmxErrChk(DAQmxWriteDigitalU8(task_handle, sample_number, 0, TIMEOUT, DAQmx_Val_GroupByScanNumber, do_samples, NULL, NULL));
-	DAQmxErrChk(DAQmxWriteAnalogF64(task_handle, sample_number, 0, TIMEOUT, DAQmx_Val_GroupByScanNumber, led_voltage, NULL, NULL));
+    print_log(DEBUG, "DAQmx - Setup sample Generations");
+	DAQmxErrChk(DAQmxWriteDigitalU8(task_handle_do, sample_number, 0, TIMEOUT, DAQmx_Val_GroupByScanNumber, do_samples, NULL, NULL));
+	DAQmxErrChk(DAQmxWriteAnalogF64(task_handle_ao, sample_number, 0, TIMEOUT, DAQmx_Val_GroupByScanNumber, led_voltage, NULL, NULL));
 
     // Enable task
-	DAQmxErrChk(DAQmxStartTask(task_handle));
+    print_log(DEBUG, "DAQmx - Enable task");
+	DAQmxErrChk(DAQmxStartTask(task_handle_do));
+	DAQmxErrChk(DAQmxStartTask(task_handle_ao));
 
-    // Wait for the task to en
-    // Timeout could be added to 
-	DAQmxErrChk (DAQmxWaitUntilTaskDone(task_handle, 20.0));
+    // Wait for the tasks to end
+    print_log(DEBUG, "DAQmx - Wait for the tasks to end");
+	DAQmxErrChk (DAQmxWaitUntilTaskDone(task_handle_do, 20.0));
+	DAQmxErrChk (DAQmxWaitUntilTaskDone(task_handle_ao, 20.0));
 
     // Free Memory and return
+    print_log(DEBUG, "Free Memory and return");
     free(time_stamp);
     free(led_voltage);
     free(do_samples);
@@ -120,10 +136,16 @@ Error:
         DAQmxGetExtendedErrorInfo(error_buffer,2048);
     }
 
-    if (task_handle != 0)
+    if (task_handle_do != 0)
     {
-        DAQmxStopTask(task_handle);
-        DAQmxClearTask(task_handle);
+        DAQmxStopTask(task_handle_do);
+        DAQmxClearTask(task_handle_do);
+    }
+
+    if (task_handle_ao != 0)
+    {
+        DAQmxStopTask(task_handle_ao);
+        DAQmxClearTask(task_handle_ao);
     }
 
     if (DAQmxFailed(error))
