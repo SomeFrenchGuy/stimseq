@@ -53,7 +53,7 @@ int main(int argc, char **argv)
         goto Error;
     }
 
-    if (!load_sequence(sequence, sequence_size))
+    if (!run(sequence, sequence_size))
     {
         goto Error;
     }
