@@ -33,7 +33,7 @@ int main(int argc, char **argv)
     }
 
     printf("********************************\n");
-    printf("****** Welcome to StimSeq ******\n");
+    printf("***** Welcome to StimSeq %s ****\n", STIMSEQ_VERSION);
     printf("********************************\n");
 
     // Ask the user to manually specify a sequence file if none were given through cli
@@ -53,7 +53,7 @@ int main(int argc, char **argv)
         goto Error;
     }
 
-    if (!load_sequence(sequence, sequence_size))
+    if (!run_sequence(sequence, sequence_size))
     {
         goto Error;
     }
