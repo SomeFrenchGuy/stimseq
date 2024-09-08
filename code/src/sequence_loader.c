@@ -46,7 +46,7 @@ static int pack(bool array [], unsigned int size, bool little_endian);
 bool run_sequence(const TimeStep * sequence, const int sequence_size)
 {
     int32 error = 0;
-    uint8 trigger_signal = {0};
+    uInt8 trigger_signal[1] = {0};
 
     char error_buffer[2048] = {'\0'};
 
@@ -60,30 +60,24 @@ bool run_sequence(const TimeStep * sequence, const int sequence_size)
 
 
     // Re-arrange Time Steps data for DAQ mx
-    int j = -1;
     for (int i = 0; i < sequence_size; i++)
     {
-        if (sequence[j+1].time == i)
-        {
-            j++;
-        }
-
-        time_stamp[i] = sequence[j].time;
-        led_voltage[i] = (float64) sequence[j].led_voltage;
-        do_samples[2*i] = pack((bool []) {                        \
-                                            sequence[j].valves[0],  \
-                                            sequence[j].valves[1],  \
-                                            sequence[j].valves[2],  \
-                                            sequence[j].valves[3],  \
-                                            sequence[j].valves[4],  \
-                                            sequence[j].valves[5],  \
-                                            sequence[j].valves[6],  \
-                                            sequence[j].valves[7]} , 8, true);
-        do_samples[2*i + 1] = sequence[j].piezo_trigger;
+        time_stamp[i] = i == 0 ? sequence[i].time : sequence[i].time - sequence[i - 1].time;
+        led_voltage[i] = (float64) sequence[i].led_voltage;
+        do_samples[2*i] = (uInt8) pack((bool []) {                        \
+                                            sequence[i].valves[0],  \
+                                            sequence[i].valves[1],  \
+                                            sequence[i].valves[2],  \
+                                            sequence[i].valves[3],  \
+                                            sequence[i].valves[4],  \
+                                            sequence[i].valves[5],  \
+                                            sequence[i].valves[6],  \
+                                            sequence[i].valves[7]} , 8, true);
+        do_samples[2*i + 1] = sequence[i].piezo_trigger;
     }
 
     print_log(DEBUG, "    | Timestamp | Led Voltage | Piezo | Valves");
-    for (int i = 0; i < sample_number; i++)
+    for (int i = 0; i < sequence_size; i++)
     {
         print_log(DEBUG, "%4i|%11i|%13i|%7i| %i", i, time_stamp[i], led_voltage[i], do_samples[2*i + 1], do_samples[2*i]);
     }
@@ -98,7 +92,7 @@ bool run_sequence(const TimeStep * sequence, const int sequence_size)
     print_log(INFO, "DAQmx - Setup Channels");
 	DAQmxErrChk(DAQmxCreateDOChan(task_handle_do, VALVES_DO, "Valves",DAQmx_Val_ChanForAllLines));
 	DAQmxErrChk(DAQmxCreateDOChan(task_handle_do, PIEZO_DO, "Piezo", DAQmx_Val_ChanPerLine));
-	DAQmxErrChk(DAQmxCreateDOChan(task_handle_trig, TTL_DI, "TTL IN", DAQmx_Val_ChanPerLine));
+	DAQmxErrChk(DAQmxCreateDIChan(task_handle_trig, TTL_DI, "TTL IN", DAQmx_Val_ChanPerLine));
 	DAQmxErrChk(DAQmxCreateAOVoltageChan(task_handle_ao, LED_AO, "LED", 0, 10, DAQmx_Val_Volts, NULL));
 
     // Enable tasks
@@ -111,7 +105,8 @@ bool run_sequence(const TimeStep * sequence, const int sequence_size)
     print_log(INFO, "Wait for Trigger from TTL");
     do
     {
-        DAQmxErrChk(DAQmxReadDigitalU8(task_handle_trig, 1, TIMEOUT, DAQmx_Val_GroupByScanNumber, 1, NULL, trigger_signal, 1)));
+        DAQmxErrChk(DAQmxReadDigitalLines(task_handle_trig, 1, TIMEOUT, DAQmx_Val_GroupByScanNumber, trigger_signal, 1, NULL, NULL, NULL));
+        print_log(DEBUG, "Trigger Signal value: %i", trigger_signal[0]);
         sleep_ms(1);
     } while (trigger_signal[0] == 0);
 
@@ -119,8 +114,8 @@ bool run_sequence(const TimeStep * sequence, const int sequence_size)
 
     for (int i = 0; i < sequence_size; i++)
     {
-        sleep_ms(sequence[i].time);
-        DAQmxErrChk(DAQmxWriteDigitalU8(task_handle_do, 1, 0, TIMEOUT, DAQmx_Val_GroupByScanNumber, &do_samples[i], NULL, NULL));
+        sleep_ms(time_stamp[i]);
+        DAQmxErrChk(DAQmxWriteDigitalU8(task_handle_do, 1, 0, TIMEOUT, DAQmx_Val_GroupByScanNumber, &do_samples[2*i], NULL, NULL));
         DAQmxErrChk(DAQmxWriteAnalogF64(task_handle_ao, 1, 0, TIMEOUT, DAQmx_Val_GroupByScanNumber, &led_voltage[i], NULL, NULL));
         print_log(INFO, "Sample %4i sent", i);
     }
@@ -312,6 +307,8 @@ static int pack(bool array [], unsigned int size, bool little_endian)
             {
                 packed_value |=  (1 << i);
             }
+
+            // print_log(DEBUG, "%2i packed_value = %i",i, packed_value);
         } 
     }
     else
@@ -321,6 +318,7 @@ static int pack(bool array [], unsigned int size, bool little_endian)
             {
                 packed_value |=  (1 << i);
             }
+            // print_log(DEBUG, "%2i packed_value = %i",i, packed_value);
         }
     }
 	return packed_value; 
