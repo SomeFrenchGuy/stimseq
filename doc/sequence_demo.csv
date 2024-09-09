@@ -1,0 +1,19 @@
+*time step (ms),V1(H20 bot), V2(Water), V3(Odor1), V4(Odor2), V5(Odor3), V6(Odor4), V7(Odor5), V8(H20 top), LED Voltage, piezo, comment
+0000,1,0,0,0,0,0,0,0,0,0,Standby
+1000,0,1,0,0,0,0,0,0,1,1,Prepare Odor1
+2000,0,0,1,0,0,0,0,0,2,0,Switch On Odor1
+3000,0,0,0,1,0,0,0,0,3,1
+4000,0,0,0,0,1,0,0,0,4,0
+5000,0,0,0,0,0,1,0,0,5,1,Switch Off Odor1
+6000,0,0,0,0,0,0,1,0,6,0
+7000,0,0,0,0,0,0,0,1,7,1
+8000,1,1,1,1,1,1,1,1,8,0
+9000,0,0,0,0,0,0,0,0,0,0
+
+* Informations about this template :
+*   - Lignes starting with a * character are ignored by stimseq
+*   - Empty Lines are ignored by stimseq
+*   - Incomplete lines will trigger errors (ex: 120, 0, 1, 5)
+*   - Comment column can be left empty with or without a final comma.
+*     The parser of stimseq will handle it
+*   - Columns V1 to V8 and piezo will accept 0 for false and 1 for true. Any value above 1 will be treated as a one.
