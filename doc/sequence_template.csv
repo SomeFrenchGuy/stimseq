@@ -13,7 +13,7 @@
 * Informations about this template :
 *   - Lignes starting with a * character are ignored by stimseq
 *   - Empty Lines are ignored by stimseq
-*   - Incomplete lines will trigger errors (ex: 120, 0, 1, 5)
+*   - Incomplete lines will trigger warninfs
 *   - Comment column can be left empty with or without a final comma.
 *     The parser of stimseq will handle it
 *   - Columns V1 to V8 and piezo will accept 0 for false and 1 for true. Any value above 1 will be treated as a one.
