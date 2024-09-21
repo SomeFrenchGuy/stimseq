@@ -86,7 +86,7 @@ def _is_number(value:str) -> bool:
 class StimSeq():
     """_summary_
     """
-    def __init__(self, log_file:str, path_to_sequence:str, log_lvl=logging.INFO) -> None:
+    def __init__(self, path_to_sequence:str, log_file:str=os.path.join(os.path.dirname(__file__), LOG_FILE), log_lvl=logging.INFO) -> None:
         self.__seq_path = path_to_sequence
         self.__log_file = log_file
         self.__log_lvl = log_lvl
@@ -98,8 +98,8 @@ class StimSeq():
 
     def __init_logger(self):
         # Create a logger
-        self.logger = logging.getLogger('my_logger')
-        self.logger.setLevel(self.__log_lvl)
+        self.__logger = logging.getLogger('my_logger')
+        self.__logger.setLevel(self.__log_lvl)
 
         # Create a formatter to define the log format
         formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s',)
@@ -115,13 +115,18 @@ class StimSeq():
         console_handler.setFormatter(formatter)
 
         # Add the handlers to the logger
-        self.logger.addHandler(file_handler)
-        self.logger.addHandler(console_handler)
+        self.__logger.addHandler(file_handler)
+        self.__logger.addHandler(console_handler)
 
     @property
     def seq_path(self) -> str:
         """ Reader for __seq_path """
         return self.__seq_path
+
+    @property
+    def logger(self) -> logging.Logger:
+        """ Reader for __logger """
+        return self.__logger
 
     @property
     def log_file(self) -> str:
@@ -147,7 +152,7 @@ class StimSeq():
     def _parse_sequence(self) -> None:
         """ Parse the sequence file.
         """
-        self.logger.info("Parsing sequence file: %s", self.__seq_path)
+        self.__logger.info("Parsing sequence file: %s", self.__seq_path)
 
         with open(self.__seq_path, 'r', encoding='utf-8', newline='') as f:
             # Load into a dict reader while skipping line starting with a *
@@ -160,10 +165,10 @@ class StimSeq():
 
             # For through csv row by row
             for i, row in enumerate(reader):
-                self.logger.debug("Parsing row: %s", row)
+                self.__logger.debug("Parsing row: %s", row)
                 # Skip rows when a column has an invalid value (Empty or not an integer)
                 if any(not _is_number(row[col]) for col in SEQUENCE_COLUMNS):
-                    self.logger.warning("Skipped Row %i because an invalid value was found", i)
+                    self.__logger.warning("Skipped Row %i because an invalid value was found", i)
                     continue
 
                 # Check Time Steps Validity
@@ -173,13 +178,13 @@ class StimSeq():
 
                     # Skip rows when time step are incoherent
                     if  time_increment < MIN_TIMESTEP :
-                        self.logger.warning("Skipped Row %i because time increment with previous steps is too small (got: %s, min: %s)",
+                        self.__logger.warning("Skipped Row %i because time increment with previous steps is too small (got: %s, min: %s)",
                                             i, time_increment, MIN_TIMESTEP)
                         continue
                 else :
                     # Force 0 if first valid row has a negative Timestep
                     if  SEQUENCE_TYPES[TIMESTAMP](row[TIMESTAMP]) <= 0 :
-                        self.logger.warning("Time step for first row has negative value: forcing zero")
+                        self.__logger.warning("Time step for first row has negative value: forcing zero")
                         row[TIMESTAMP] = '0'
 
                 # Append line to list
@@ -187,9 +192,9 @@ class StimSeq():
 
             # Save sequence to a tuple in order to prevent editing by mistake
             self.__sequence = tuple(tmp_seq)
-            if self.logger.isEnabledFor(logging.DEBUG):
+            if self.__logger.isEnabledFor(logging.DEBUG):
                 for step in self.__sequence:
-                    self.logger.debug("Parsed sequence: %s", step)
+                    self.__logger.debug("Parsed sequence: %s", step)
 
     def run_sequence(self) -> None:
         """ Execute the sequence from the computer """
@@ -210,7 +215,7 @@ class StimSeq():
             ao_data_step_size = len(ao_data_keys)
 
             # Prepare sequence data for DAQ Generation
-            self.logger.info("Prepare sequence data for DAQ Generation")
+            self.__logger.info("Prepare sequence data for DAQ Generation")
             for i, step in enumerate(self.__sequence):
                 print(f"step {i} : {step}")
                 time_data.append((step[TIMESTAMP] - self.__sequence[i - 1][TIMESTAMP]) if i else step[TIMESTAMP])
@@ -220,21 +225,21 @@ class StimSeq():
                 
                 for key in ao_data_keys:
                     ao_data.append(step[key])
-            self.logger.debug("time_data: %s", time_data)
-            self.logger.debug("do_data: %s", do_data)
-            self.logger.debug("ao_data: %s", ao_data)
+            self.__logger.debug("time_data: %s", time_data)
+            self.__logger.debug("do_data: %s", do_data)
+            self.__logger.debug("ao_data: %s", ao_data)
 
             # Compute sequence size
             seq_size = len(time_data)
 
             # Check all data lists are of the same size
             if not all((seq_size == len(ao_data)/ao_data_step_size, len(do_data)/do_data_step_size)):
-                self.logger.critical("Incoherent size between prepared output data")
+                self.__logger.critical("Incoherent size between prepared output data")
                 raise ValueError
             
 
             # Init DAQ channels
-            self.logger.info("Init DAQ Channels")
+            self.__logger.info("Init DAQ Channels")
             task_do.do_channels.add_do_chan(lines=VALVES_DO, name_to_assign_to_lines="Valves",
                                             line_grouping=LineGrouping.CHAN_PER_LINE)
             task_do.do_channels.add_do_chan(lines=PIEZO_DO, name_to_assign_to_lines="Piezo",
@@ -245,19 +250,21 @@ class StimSeq():
                                                     min_val=0, max_val=10, units=VoltageUnits.VOLTS)
     
             # Wait for trigger signal
-            self.logger.info("Waiting for trigger signal on %s", TTL_DI)
+            self.__logger.info("Waiting for trigger signal on %s", TTL_DI)
             trig = 0
             while trig == 0:
                 trig = task_trig.read()
-            self.logger.info("Trigger signal received")
+            self.__logger.info("Trigger signal received")
 
             # Execute sequence
             for i in range(seq_size):
                 sleep(time_data[i] / 1000)
                 task_do.write(do_data[i*do_data_step_size : i*do_data_step_size + do_data_step_size])
                 task_ao.write(ao_data[i*ao_data_step_size : i*ao_data_step_size + ao_data_step_size])
-                self.logger.debug("Sent do: %s", do_data[i*do_data_step_size : i*do_data_step_size + do_data_step_size])
-                self.logger.debug("Sent ao: %s", ao_data[i*ao_data_step_size : i*ao_data_step_size + ao_data_step_size])
+                self.__logger.debug("Sent do: %s", do_data[i*do_data_step_size : i*do_data_step_size + do_data_step_size])
+                self.__logger.debug("Sent ao: %s", ao_data[i*ao_data_step_size : i*ao_data_step_size + ao_data_step_size])
+           
+            self.__logger.info("Finished sending sequence")
 
 
 # Method to validate a path given through command line
@@ -294,4 +301,5 @@ if __name__ == "__main__" :
                       log_lvl=LOG_LEVELS[args.log_lvl or "INFO"],
                       log_file=os.path.join(os.path.dirname(__file__), LOG_FILE))
 
+    # Run Stimseq
     stimseq.run_sequence()
