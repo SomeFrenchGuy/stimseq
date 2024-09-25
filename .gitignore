@@ -5,6 +5,9 @@
 # Ignore Virtual env folder
 .env
 
+# ignore delivery files
+bin
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
