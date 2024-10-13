@@ -87,14 +87,13 @@ class StimSeq():
     """_summary_
     """
     def __init__(self, path_to_sequence:str, log_file:str=os.path.join(os.path.dirname(__file__), LOG_FILE), log_lvl=logging.INFO) -> None:
-        self.__seq_path = path_to_sequence
         self.__log_file = log_file
         self.__log_lvl = log_lvl
         self.__sequence:tuple[dict[str, int | float | bool]]
 
         self.__init_logger()
 
-        self._parse_sequence()
+        self.seq_path = path_to_sequence
 
     def __init_logger(self):
         # Create a logger
@@ -122,6 +121,18 @@ class StimSeq():
     def seq_path(self) -> str:
         """ Reader for __seq_path """
         return self.__seq_path
+
+    @seq_path.setter
+    def seq_path(self, path_to_sequence:str) -> None:
+        """ Setter for __seq_path """
+        # Raise error if invalid path
+        if not os.path.isfile(path_to_sequence):
+            raise argparse.ArgumentTypeError(f"{path_to_sequence} is not a valid path")
+
+        self.__seq_path = path_to_sequence
+
+        # Parse sequence when sequence path is changed
+        self._parse_sequence()
 
     @property
     def logger(self) -> logging.Logger:
@@ -276,6 +287,23 @@ def _file_path(file_path:str) -> str:
         return file_path
 
     raise argparse.ArgumentTypeError(f"{file_path} is not a valid path")
+
+class StimSeqGUI():
+    
+    def __init__(self):
+        pass
+
+    def plot_sequence(self):
+        pass
+
+    def save_plot(self):
+        pass
+
+    def get_sequence_file(self):
+        pass
+
+    def quit(self):
+        pass
 
 # Execute when this file is executed directly
 if __name__ == "__main__" :
