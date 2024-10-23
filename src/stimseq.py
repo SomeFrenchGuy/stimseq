@@ -5,8 +5,13 @@ import logging
 import os
 import csv
 
-from tkinter import Tk, filedialog
+# Imports for graphical interface
+from tkinter import Tk, filedialog, filedialog, Label, Frame, Button
 from time import sleep
+
+# Imports for plotting datas
+import matplotlib.pyplot as plot
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 import nidaqmx as ni
 from nidaqmx.constants import LineGrouping, VoltageUnits, CountDirection, Edge
@@ -65,6 +70,8 @@ SEQUENCE_TYPES = {
     PIEZO: bool,
 }
 
+# Const for plotting sequence
+PLOT_STYLE = 'bo-'  #blue, dots, contiguous line
 
 # Const for DAQ
 DAQ_NAME = "/Dev1"
@@ -84,7 +91,7 @@ def _is_number(value:str) -> bool:
 
 
 class StimSeq():
-    """_summary_
+    """ Stimseq main class handling the logic
     """
     def __init__(self, path_to_sequence:str, log_file:str=os.path.join(os.path.dirname(__file__), LOG_FILE), log_lvl=logging.INFO) -> None:
         self.__log_file = log_file
@@ -95,7 +102,7 @@ class StimSeq():
 
         self.seq_path = path_to_sequence
 
-    def __init_logger(self):
+    def __init_logger(self) -> None:
         # Create a logger
         self.__logger = logging.getLogger('my_logger')
         self.__logger.setLevel(self.__log_lvl)
@@ -150,7 +157,7 @@ class StimSeq():
         return self.__log_lvl
 
     @property
-    def sequence(self) -> dict[str, tuple[int]]:
+    def sequence(self) -> tuple[dict[str, int | float | bool]]:
         """ Reader for __sequence """
         return self.__sequence
 
@@ -281,6 +288,96 @@ class StimSeq():
             self.__logger.info("Finished sending sequence")
 
 
+class StimSeqGUI():
+    """ Stimseq GUI handling graphical interface used to validate a sequence"""
+    def __init__(self,) -> None:
+        #  Init TK
+        self.__root = Tk()
+        self.__root.protocol("WM_DELETE_WINDOW", self.__quit)
+        self.__root.title("Stimseq - Plot sequence")
+        self.__root.withdraw()
+
+        # Prepare drowing area. 
+        # number_of_rows = Number of column minus 1 because first column is for timestamps
+        self.__number_of_rows = len(SEQUENCE_COLUMNS) - 1
+        self.__figure, self.__axes = plot.subplots(nrows=self.__number_of_rows,constrained_layout=True)
+        self.__figure.set_figheight(10)
+
+        # Init tk frame, it is the main graphical unit inside the window
+        self.__frame = Frame(self.__root)
+
+        # Init the canvs. This is were the plot will be drawn
+        self.__canvas = FigureCanvasTkAgg(figure=self.__figure, master=self.__frame)
+
+
+        # Default to false so closing the window won't start the sequence
+        self.__sequence_validated = False
+        
+
+    def __quit(self) -> None:
+        """ Callable to close GUI Window"""
+        self.__root.quit()
+        self.__root.destroy()
+
+    def __plot_sequence(self, sequence: tuple[dict[str, int | float | bool]]) -> None:
+        """Plot the sequence in the graphical interface and show it to the user
+
+        Args:
+            sequence (tuple[dict[str, int  |  float  |  bool]]): The sequence to plot
+        """
+
+        # Arrange data for plotting it
+        plotable_sequence: dict[str, list[int | float | bool]] = {}
+        timestamps = []
+        for step in sequence:
+            timestamps.append(step[TIMESTAMP])
+            for key in SEQUENCE_COLUMNS:
+                if key == TIMESTAMP:
+                    continue
+                plotable_sequence.setdefault(key, []).append(step[key])
+        
+        for i, (title, values) in enumerate(plotable_sequence.items()):
+            self.__axes[i].plot(timestamps, values)
+            self.__axes[i].set_ylabel(title)
+
+        self.__canvas.draw()
+        
+    
+    def show_gui(self, sequence: tuple[dict[str, int | float | bool]]) -> None:
+        """ Show gui
+        plot the sequence, and add buttons asking the use what he wants to do
+
+        Args:
+            sequence (tuple[dict[str, int  |  float  |  bool]]): The sequence to validate
+        """
+
+        self.__plot_sequence(sequence=sequence)
+
+        # Pack graphical objects together
+        self.__canvas.get_tk_widget().pack()
+        self.__frame.pack()
+        # Create a button for validation and draw it
+        Button(master=self.__frame, text="Save Plot and start sequence", command= self.__save_plot_and_run).pack()
+        Button(master=self.__frame, text="Quit without running sequence", command= self.__quit).pack()
+
+        self.__root.wm_deiconify()
+        self.__root.mainloop()
+
+        return self.__sequence_validated
+
+    def __save_plot_and_run(self) -> None:
+        """ Save the 
+        """
+        path = filedialog.asksaveasfilename(defaultextension="png")
+        self.__figure.savefig(path)
+        self.__sequence_validated = True
+        self.__quit()
+
+    def get_sequence_file_from_user(self) -> None:
+        """ Opens a window to ask the user for the sequence file
+        """
+        return filedialog.askopenfilename(defaultextension=".csv", initialdir=os.getcwd())
+
 # Method to validate a path given through command line
 def _file_path(file_path:str) -> str:
     if os.path.isfile(file_path):
@@ -288,22 +385,8 @@ def _file_path(file_path:str) -> str:
 
     raise argparse.ArgumentTypeError(f"{file_path} is not a valid path")
 
-class StimSeqGUI():
-    
-    def __init__(self):
-        pass
 
-    def plot_sequence(self):
-        pass
 
-    def save_plot(self):
-        pass
-
-    def get_sequence_file(self):
-        pass
-
-    def quit(self):
-        pass
 
 # Execute when this file is executed directly
 if __name__ == "__main__" :
@@ -319,18 +402,18 @@ if __name__ == "__main__" :
                         choices=LOG_LEVELS.keys())
     args = parser.parse_args()
 
+    stimseq_gui = StimSeqGUI()
 
     # Open a File Picker Dialog if no path given through cli
     if not args.seq_path :
-        root = Tk()
-        root.withdraw()
-
-        args.seq_path = filedialog.askopenfilename(defaultextension=".csv", initialdir=os.getcwd())
+        args.seq_path = stimseq_gui.get_sequence_file_from_user()
 
     # Init stimseq
     stimseq = StimSeq(path_to_sequence=args.seq_path,
-                      log_lvl=LOG_LEVELS[args.log_lvl or "INFO"],
+                      log_lvl=LOG_LEVELS[args.log_lvl or "DEBUG"],
                       log_file=os.path.join(os.path.dirname(__file__), LOG_FILE))
-
-    # Run Stimseq
-    stimseq.run_sequence()
+    
+    # Run sequence if user clicked the save & run button
+    if stimseq_gui.show_gui(sequence=stimseq.sequence):
+        # Run Stimseq
+        stimseq.run_sequence()

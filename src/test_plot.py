@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plot
+from matplotlib.axes import Axes
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-from tkinter import Tk, filedialog, Label, Frame,Button
+from tkinter import Tk, filedialog, Label, Frame, Button
 from time import sleep
 
 
@@ -18,10 +19,8 @@ def _quit():
 root = Tk()
 root.protocol("WM_DELETE_WINDOW", _quit)
 root.title("Stimseq - Plot sequence")
-figure, axes = plot.subplots(nrows=2)
+figure, axes = plot.subplots(nrows=2,)
 
-axes[0].scatter([1,4,6,8], [1,2,3,4])
-axes[1].scatter([1,4,6,8], [1,2,3,4])
 
 
 # Init tk frame
@@ -34,9 +33,16 @@ label.pack()
 # Add Canvas to Frame
 canvas = FigureCanvasTkAgg(figure=figure, master=frame)
 canvas.get_tk_widget().pack()
-canvas.draw()
+
 frame.pack()
 
-Button(master=frame, text="Button to save & continue", command= save_plot).pack()
+
+
+axes[0].plot([1,4,6,8], [1,2,3,4], 'bo-')
+axes[0].set_ylabel("Y_axis_title")
+axes[1].scatter([1,4,6,8], [1,2,3,4])
+canvas.draw()
+
+label.config(text="TOTOTO")
 
 root.mainloop()
