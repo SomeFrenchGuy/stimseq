@@ -6,7 +6,7 @@ import os
 import csv
 
 # Imports for graphical interface
-from tkinter import Tk, filedialog, filedialog, Label, Frame, Button
+from tkinter import Tk, ttk, filedialog, filedialog, Frame, Button, Canvas
 from time import sleep
 
 # Imports for plotting datas
@@ -295,19 +295,55 @@ class StimSeqGUI():
         self.__root = Tk()
         self.__root.protocol("WM_DELETE_WINDOW", self.__quit)
         self.__root.title("Stimseq - Plot sequence")
+        self.__root.minsize(width=400, height=300)
         self.__root.withdraw()
 
-        # Prepare drowing area. 
+        # Prepare drawing area. 
         # number_of_rows = Number of column minus 1 because first column is for timestamps
         self.__number_of_rows = len(SEQUENCE_COLUMNS) - 1
         self.__figure, self.__axes = plot.subplots(nrows=self.__number_of_rows,constrained_layout=True)
-        self.__figure.set_figheight(10)
+        self.__figure.set_figheight(1.5 * self.__number_of_rows)
 
-        # Init tk frame, it is the main graphical unit inside the window
-        self.__frame = Frame(self.__root)
+        # Init tk frames, it is the main graphical unit inside the window
+        self.__main_frame = Frame(self.__root)
+        self.__buttons_frame = Frame(self.__main_frame)
+        self.__canvas_frame = Frame(self.__main_frame)
 
-        # Init the canvs. This is were the plot will be drawn
-        self.__canvas = FigureCanvasTkAgg(figure=self.__figure, master=self.__frame)
+        # Create buttons and pack them into their master frame
+        self.__btn_save = Button(master=self.__buttons_frame, text="Save Plot and start sequence", command= self.__save_plot_and_run)
+        self.__btn_quit = Button(master=self.__buttons_frame, text="Quit without running sequence", command= self.__quit)
+        self.__btn_save.pack()
+        self.__btn_quit.pack()
+
+        # Init the canvas and pack into its master frame. This is were the plot will be drawn
+        self.__scroll_canvas = Canvas(self.__canvas_frame)
+        self.__canvas = FigureCanvasTkAgg(figure=self.__figure, master=self.__scroll_canvas)
+        self.__cwidg = self.__canvas.get_tk_widget()
+        self.__scroll_canvas.create_window(0, 0, anchor='nw', window=self.__cwidg)
+
+        self.__scrx = ttk.Scrollbar(self.__canvas_frame, orient="horizontal", command=self.__scroll_canvas.xview)
+        self.__scry = ttk.Scrollbar(self.__canvas_frame, orient="vertical", command=self.__scroll_canvas.yview)
+        self.__scroll_canvas.configure(yscrollcommand=self.__scry.set, xscrollcommand=self.__scrx.set)
+
+        self.__scroll_canvas.grid(row=1, column=0, sticky='news')
+        self.__scrx.grid(row=2, column=0, sticky='ew')
+        self.__scry.grid(row=1, column=1, sticky='ns')
+
+        self.__canvas_frame.rowconfigure(1, weight=1)
+        self.__canvas_frame.columnconfigure(0, weight=1)
+
+        wi = self.__figure.get_figwidth()
+        wp = self.__cwidg.winfo_reqwidth(),
+
+        self.__scroll_canvas.configure(width=wp, height=self.__cwidg.winfo_reqheight())
+        self.__scroll_canvas.configure(scrollregion=self.__scroll_canvas.bbox("all"))
+
+
+        # Pack graphical objects together
+        self.__buttons_frame.pack()
+        self.__canvas_frame.pack()
+        self.__main_frame.pack()
+
 
 
         # Default to false so closing the window won't start the sequence
@@ -350,17 +386,20 @@ class StimSeqGUI():
         Args:
             sequence (tuple[dict[str, int  |  float  |  bool]]): The sequence to validate
         """
-
+        # Plot the sequence
         self.__plot_sequence(sequence=sequence)
 
-        # Pack graphical objects together
-        self.__canvas.get_tk_widget().pack()
-        self.__frame.pack()
-        # Create a button for validation and draw it
-        Button(master=self.__frame, text="Save Plot and start sequence", command= self.__save_plot_and_run).pack()
-        Button(master=self.__frame, text="Quit without running sequence", command= self.__quit).pack()
-
+        # Display the window
+        ws = self.__root.winfo_screenwidth()
+        hs = self.__root.winfo_screenheight()
+        x1 = int(ws*1/4)
+        y1 = int(hs*1/3)
+        x2 = int(ws*3/4) - x1
+        y2 = int(hs*2/3) - y1
+        self.__root.geometry(f"{x2}x{y1}+{x1}+{y2}")
         self.__root.wm_deiconify()
+
+        # Wait for user input
         self.__root.mainloop()
 
         return self.__sequence_validated
