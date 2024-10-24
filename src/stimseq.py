@@ -8,6 +8,7 @@ import csv
 # Imports for graphical interface
 from tkinter import Tk, ttk, filedialog, filedialog, Frame, Button, Canvas
 from time import sleep
+from datetime import datetime
 
 # Imports for plotting datas
 import matplotlib.pyplot as plot
@@ -287,6 +288,9 @@ class StimSeq():
 
 class StimSeqGUI():
     """ Stimseq GUI handling graphical interface used to validate a sequence"""
+
+    __base_seq_name:str
+
     def __init__(self,) -> None:
         #  Init TK
         self.__root = Tk()
@@ -346,7 +350,6 @@ class StimSeqGUI():
         # Default to false so closing the window won't start the sequence
         self.__sequence_validated = False
         
-
     def __quit(self) -> None:
         """ Callable to close GUI Window"""
         self.__root.quit()
@@ -375,7 +378,6 @@ class StimSeqGUI():
 
         self.__canvas.draw()
         
-    
     def show_gui(self, sequence: tuple[dict[str, int | float | bool]]) -> None:
         """ Show gui
         plot the sequence, and add buttons asking the use what he wants to do
@@ -404,7 +406,11 @@ class StimSeqGUI():
     def __save_plot_and_run(self) -> None:
         """ Save the 
         """
-        path = filedialog.asksaveasfilename(defaultextension="png")
+        now = datetime.now()
+
+        path = filedialog.asksaveasfilename(initialfile=f"{now.strftime("%Y-%m-%d_%H.%M.%S")}-{self.__base_seq_name}.png",
+                                            initialdir=os.getcwd(),
+                                            defaultextension="png")
         self.__figure.savefig(path)
         self.__sequence_validated = True
         self.__quit()
@@ -412,7 +418,10 @@ class StimSeqGUI():
     def get_sequence_file_from_user(self) -> None:
         """ Opens a window to ask the user for the sequence file
         """
-        return filedialog.askopenfilename(defaultextension=".csv", initialdir=os.getcwd())
+
+        path = filedialog.askopenfilename(defaultextension=".csv", initialdir=os.getcwd())
+        self.__base_seq_name = os.path.basename(path)
+        return path
 
 # Method to validate a path given through command line
 def _file_path(file_path:str) -> str:
