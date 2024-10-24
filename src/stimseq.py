@@ -17,7 +17,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import nidaqmx as ni
 from nidaqmx.constants import LineGrouping, VoltageUnits
 
-VERSION = "Beta 2"
+VERSION = "Beta 4"
 COMPAT_MODELS = "USB-6001, USB-6002, USB-6003"
 DESCRIPTION = "Software to generate stimulation sequences using a NI DAQ"
 COMPATIBILITY = f"Compatible models:{COMPAT_MODELS}"
