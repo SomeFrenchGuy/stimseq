@@ -373,7 +373,7 @@ class StimSeqGUI():
                 plotable_sequence.setdefault(key, []).append(step[key])
         
         for i, (title, values) in enumerate(plotable_sequence.items()):
-            self.__axes[i].plot(timestamps, values)
+            self.__axes[i].plot(timestamps, values, PLOT_STYLE)
             self.__axes[i].set_ylabel(title)
 
         self.__canvas.draw()
