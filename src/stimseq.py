@@ -14,9 +14,9 @@ import matplotlib.pyplot as plot
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 import nidaqmx as ni
-from nidaqmx.constants import LineGrouping, VoltageUnits, CountDirection, Edge
+from nidaqmx.constants import LineGrouping, VoltageUnits
 
-VERSION = "Beta 3"
+VERSION = "Beta 2"
 COMPAT_MODELS = "USB-6001, USB-6002, USB-6003"
 DESCRIPTION = "Software to generate stimulation sequences using a NI DAQ"
 COMPATIBILITY = f"Compatible models:{COMPAT_MODELS}"
@@ -74,11 +74,11 @@ SEQUENCE_TYPES = {
 PLOT_STYLE = 'bo-'  #blue, dots, contiguous line
 
 # Const for DAQ
-DAQ_NAME = "/Dev1"
+DAQ_NAME = "Dev1"
 VALVES_DO = f"{DAQ_NAME}/port0/line0:7"
 PIEZO_DO = f"{DAQ_NAME}/port1/line0"
 LED_AO = f"{DAQ_NAME}/ao0"
-TTL_INPUT = f"{DAQ_NAME}/PFI0"
+TTL_DI = f"{DAQ_NAME}/port2/line0"
 WRITE_TIMEOUT = 10
 
 # Method to check if string contains a number
@@ -254,24 +254,21 @@ class StimSeq():
             if not all((seq_size == len(ao_data)/ao_data_step_size, len(do_data)/do_data_step_size)):
                 self.__logger.critical("Incoherent size between prepared output data")
                 raise ValueError
+            
 
-            # Init DAQ output channels
-            self.__logger.info("Init DAQ output Channels")
+            # Init DAQ channels
+            self.__logger.info("Init DAQ Channels")
             task_do.do_channels.add_do_chan(lines=VALVES_DO, name_to_assign_to_lines="Valves",
                                             line_grouping=LineGrouping.CHAN_PER_LINE)
             task_do.do_channels.add_do_chan(lines=PIEZO_DO, name_to_assign_to_lines="Piezo",
                                             line_grouping=LineGrouping.CHAN_PER_LINE)
+            task_trig.di_channels.add_di_chan(lines=TTL_DI, name_to_assign_to_lines="TTL IN",
+                                              line_grouping=LineGrouping.CHAN_PER_LINE)
             task_ao.ao_channels.add_ao_voltage_chan(physical_channel=LED_AO, name_to_assign_to_channel="LED",
                                                     min_val=0, max_val=10, units=VoltageUnits.VOLTS)
-        
-            # Init Trigger Channel
-            self.__logger.info("Init Trigger Channel")
-            trig_chan = task_trig.ci_channels.add_ci_count_edges_chan(counter=f"{DAQ_NAME}/ctr0", edge=Edge.RISING,
-                                                                      initial_count=0, count_direction=CountDirection.COUNT_UP)
-            trig_chan.ci_count_edges_term = TTL_INPUT
     
             # Wait for trigger signal
-            self.__logger.info("Waiting for trigger signal on %s", TTL_INPUT)
+            self.__logger.info("Waiting for trigger signal on %s", TTL_DI)
             trig = 0
             while trig == 0:
                 trig = task_trig.read()
