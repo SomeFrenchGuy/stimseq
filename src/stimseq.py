@@ -32,6 +32,7 @@ LOG_FILE = "stimseq.log"
 #########################
 
 # Columns of the sequence file, in order
+# OUTPUT_ADDITION_SECTION
 SEQUENCE_COLUMNS = [
     TIMESTAMP := "Timestamp",
     VALVE1 := "V1",
@@ -53,6 +54,7 @@ MIN_TIMESTEP = 50
 WRITE_TIMEOUT = 10
 
 # Type convertions for each column
+# OUTPUT_ADDITION_SECTION
 SEQUENCE_TYPES = {
     TIMESTAMP: int,
     VALVE1: bool,
@@ -76,13 +78,18 @@ AO_DATA_KEYS = [key for key in SEQUENCE_COLUMNS if SEQUENCE_TYPES[key] == float]
 # Acceptable range for AO data
 AO_RANGE = [-10, 10]
 
-# Const for DAQ Wiring
+# Name of the DAQ as defined in NI MAX
 DAQ_NAME = "Dev1"
-VALVES_DO = f"{DAQ_NAME}/port0/line0:7"
-PIEZO_DO = f"{DAQ_NAME}/port1/line0"
-LED_AO = f"{DAQ_NAME}/ao0"
-TTL_DI = f"{DAQ_NAME}/port2/line0"
-HEARBIT_DO = f"{DAQ_NAME}/port1/line1"
+
+# Const for DAQ Wiring
+# OUTPUT_ADDITION_SECTION
+DAQ_WIRING = [
+    VALVES_DO := f"{DAQ_NAME}/port0/line0:7",
+    PIEZO_DO := f"{DAQ_NAME}/port1/line0",
+    LED_AO := f"{DAQ_NAME}/ao0",
+    TTL_DI := f"{DAQ_NAME}/port2/line0",
+    HEARBIT_DO := f"{DAQ_NAME}/port1/line1",
+]
 
 
 # Method to check if string contains a number
@@ -295,14 +302,16 @@ class StimSeq():
 
             self.__logger.info("Init DAQ Channels")
             # Init Digital Output Channels
+            # OUTPUT_ADDITION_SECTION
             task_do.do_channels.add_do_chan(lines=VALVES_DO, name_to_assign_to_lines="Valves",
                                             line_grouping=LineGrouping.CHAN_PER_LINE)
             task_do.do_channels.add_do_chan(lines=PIEZO_DO, name_to_assign_to_lines="Piezo",
                                             line_grouping=LineGrouping.CHAN_PER_LINE)
 
             # Init Analog Output Channels
+            # OUTPUT_ADDITION_SECTION
             task_ao.ao_channels.add_ao_voltage_chan(physical_channel=LED_AO, name_to_assign_to_channel="LED",
-                                                    min_val=0, max_val=10, units=VoltageUnits.VOLTS)
+                                                    min_val=min(AO_RANGE), max_val=min(AO_RANGE), units=VoltageUnits.VOLTS)
 
             # Add Heartbeat to digital output channels
             if enable_heartbeat:
