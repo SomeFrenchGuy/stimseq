@@ -68,8 +68,13 @@ SEQUENCE_TYPES = {
 }
 
 # Regrouping of columns by output type
-DO_DATA_KEYS = [VALVE1, VALVE2, VALVE3, VALVE4, VALVE5, VALVE6, VALVE7, VALVE8, PIEZO]
-AO_DATA_KEYS = [LED]
+# - bool = DO
+# - float = AO
+DO_DATA_KEYS = [key for key in SEQUENCE_COLUMNS if SEQUENCE_TYPES[key] == bool]
+AO_DATA_KEYS = [key for key in SEQUENCE_COLUMNS if SEQUENCE_TYPES[key] == float]
+
+# Acceptable range for AO data
+AO_RANGE = [-10, 10]
 
 # Const for DAQ Wiring
 DAQ_NAME = "Dev1"
@@ -197,12 +202,18 @@ class StimSeq():
             # tmp dict to save sequence
             tmp_seq:list[dict[str, int | float | bool]] = []
 
-            # For through csv row by row
+            # For loop through csv row by row
             for i, row in enumerate(reader):
                 self.__logger.debug("Parsing row: %s", row)
                 # Skip rows when a column has an invalid value (Empty or not an integer)
                 if any(not _is_number(row[col]) for col in SEQUENCE_COLUMNS):
                     self.__logger.warning("Skipped Row %i because an invalid value was found", i)
+                    continue
+
+                # Skip line if analog value outside acceptable range is found
+                if not all(min(AO_RANGE) <= int(row[key]) <= max(AO_RANGE) for key in AO_DATA_KEYS):
+                    self.__logger.warning("Skipped Row %i because Analog Output data is out of range (min: %s, max: %s)",
+                                            i, min(AO_RANGE), max(AO_RANGE))
                     continue
 
                 # Check Time Steps Validity
@@ -255,7 +266,6 @@ class StimSeq():
             # Prepare sequence data for DAQ Generation
             self.__logger.info("Prepare sequence data for DAQ Generation")
             for i, step in enumerate(self.__sequence):
-                print(f"step {i} : {step}")
                 time_data.append((step[TIMESTAMP] - self.__sequence[i - 1][TIMESTAMP]) if i else step[TIMESTAMP])
 
                 # Prepare digital output values
@@ -298,7 +308,7 @@ class StimSeq():
             if enable_heartbeat:
                 task_do.do_channels.add_do_chan(lines=HEARBIT_DO, name_to_assign_to_lines="HeartBeat",
                                                 line_grouping=LineGrouping.CHAN_PER_LINE)
-            
+
             # Init digital input channel for trigger signal
             task_trig.di_channels.add_di_chan(lines=TTL_DI, name_to_assign_to_lines="TTL IN",
                                               line_grouping=LineGrouping.CHAN_PER_LINE)
@@ -317,6 +327,13 @@ class StimSeq():
                 task_ao.write(ao_data[i*ao_data_step_size : i*ao_data_step_size + ao_data_step_size])
                 self.__logger.debug("Sent do: %s", do_data[i*do_data_step_size : i*do_data_step_size + do_data_step_size])
                 self.__logger.debug("Sent ao: %s", ao_data[i*ao_data_step_size : i*ao_data_step_size + ao_data_step_size])
+
+            # Reset outputs to 0 for safety reasons
+            # The reset occurs after a pause equals to last timesteps
+            sleep(time_data[-1] / 1000)
+            task_do.write([False,]* do_data_step_size)
+            task_ao.write([0,]* ao_data_step_size)
+            self.__logger.info("Reseted outputs to O")
 
             self.__logger.info("Finished sending sequence")
 
