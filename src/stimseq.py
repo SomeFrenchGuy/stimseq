@@ -27,32 +27,31 @@ LOG_LEVELS = {"DEBUG": logging.DEBUG,
               "CRITICAL": logging.CRITICAL}
 LOG_FILE = "stimseq.log"
 
-# Const for csv parsing
-MIN_TIMESTEP = 50
-TIMESTAMP = "Timestamp"
-VALVE1 = "V1"
-VALVE2 = "V2"
-VALVE3 = "V3"
-VALVE4 = "V4"
-VALVE5 = "V5"
-VALVE6 = "V6"
-VALVE7 = "V7"
-VALVE8 = "V8"
-LED = "LED"
-PIEZO = "Piezo"
+#########################
+# Const for csv parsing #
+#########################
+
+# Columns of the sequence file, in order
 SEQUENCE_COLUMNS = [
-    TIMESTAMP,
-    VALVE1,
-    VALVE2,
-    VALVE3,
-    VALVE4,
-    VALVE5,
-    VALVE6,
-    VALVE7,
-    VALVE8,
-    LED,
-    PIEZO,
+    TIMESTAMP := "Timestamp",
+    VALVE1 := "V1",
+    VALVE2 := "V2",
+    VALVE3 := "V3",
+    VALVE4 := "V4",
+    VALVE5 := "V5",
+    VALVE6 := "V6",
+    VALVE7 := "V7",
+    VALVE8 := "V8",
+    LED := "LED",
+    PIEZO := "Piezo",
 ]
+
+# Minimum accepted increment between time steps
+MIN_TIMESTEP = 50
+
+# Timeout for write operations to the DAQ
+WRITE_TIMEOUT = 10
+
 # Type convertions for each column
 SEQUENCE_TYPES = {
     TIMESTAMP: int,
@@ -68,17 +67,29 @@ SEQUENCE_TYPES = {
     PIEZO: bool,
 }
 
+# Regrouping of columns by output type
+DO_DATA_KEYS = [VALVE1, VALVE2, VALVE3, VALVE4, VALVE5, VALVE6, VALVE7, VALVE8, PIEZO]
+AO_DATA_KEYS = [LED]
 
-# Const for DAQ
+# Const for DAQ Wiring
 DAQ_NAME = "Dev1"
 VALVES_DO = f"{DAQ_NAME}/port0/line0:7"
 PIEZO_DO = f"{DAQ_NAME}/port1/line0"
 LED_AO = f"{DAQ_NAME}/ao0"
 TTL_DI = f"{DAQ_NAME}/port2/line0"
-WRITE_TIMEOUT = 10
+HEARBIT_DO = f"{DAQ_NAME}/port1/line1"
+
 
 # Method to check if string contains a number
 def _is_number(value:str) -> bool:
+    """ Method to check if string contains a number
+
+    Args:
+        value (str): input string
+
+    Returns:
+        bool: Returns True if string represent a number.
+    """
     try:
         float(value)
     except ValueError:
@@ -220,8 +231,12 @@ class StimSeq():
                     self.__logger.debug("Parsed sequence: %s", step)
 
     #pylint: disable=too-many-locals
-    def run_sequence(self) -> None:
-        """ Execute the sequence from the computer """
+    def run_sequence(self, enable_heartbeat:bool=True) -> None:
+        """Execute the sequence from the computer
+
+        Args:
+            enable_heartbeat (bool, optional): Enables a heartbeat signal, changing state with every new generated sample. Defaults to True.
+        """
 
         with (
             ni.Task("Digital Outputs") as task_do,
@@ -231,12 +246,11 @@ class StimSeq():
             time_data:list[float] = []
             do_data:list[int] = []
             ao_data:list[float] = []
+            heartbit_value = False
 
             # Prepare data arrangement
-            do_data_keys = [VALVE1, VALVE2, VALVE3, VALVE4, VALVE5, VALVE6, VALVE7, VALVE8, PIEZO]
-            ao_data_keys = [LED]
-            do_data_step_size = len(do_data_keys)
-            ao_data_step_size = len(ao_data_keys)
+            do_data_step_size = len(DO_DATA_KEYS) + (1 if enable_heartbeat else 0)
+            ao_data_step_size = len(AO_DATA_KEYS)
 
             # Prepare sequence data for DAQ Generation
             self.__logger.info("Prepare sequence data for DAQ Generation")
@@ -244,10 +258,17 @@ class StimSeq():
                 print(f"step {i} : {step}")
                 time_data.append((step[TIMESTAMP] - self.__sequence[i - 1][TIMESTAMP]) if i else step[TIMESTAMP])
 
-                for key in do_data_keys:
+                # Prepare digital output values
+                for key in DO_DATA_KEYS:
                     do_data.append(step[key])
 
-                for key in ao_data_keys:
+                # If heartbit enabled, add heartbit signal to digital output
+                # changing from True to False with every time step
+                if enable_heartbeat:
+                    do_data.append(heartbit_value := not heartbit_value)
+
+                # preapre Analog output Values
+                for key in AO_DATA_KEYS:
                     ao_data.append(step[key])
             self.__logger.debug("time_data: %s", time_data)
             self.__logger.debug("do_data: %s", do_data)
@@ -262,16 +283,25 @@ class StimSeq():
                 raise ValueError
 
 
-            # Init DAQ channels
             self.__logger.info("Init DAQ Channels")
+            # Init Digital Output Channels
             task_do.do_channels.add_do_chan(lines=VALVES_DO, name_to_assign_to_lines="Valves",
                                             line_grouping=LineGrouping.CHAN_PER_LINE)
             task_do.do_channels.add_do_chan(lines=PIEZO_DO, name_to_assign_to_lines="Piezo",
                                             line_grouping=LineGrouping.CHAN_PER_LINE)
-            task_trig.di_channels.add_di_chan(lines=TTL_DI, name_to_assign_to_lines="TTL IN",
-                                              line_grouping=LineGrouping.CHAN_PER_LINE)
+
+            # Init Analog Output Channels
             task_ao.ao_channels.add_ao_voltage_chan(physical_channel=LED_AO, name_to_assign_to_channel="LED",
                                                     min_val=0, max_val=10, units=VoltageUnits.VOLTS)
+
+            # Add Heartbeat to digital output channels
+            if enable_heartbeat:
+                task_do.do_channels.add_do_chan(lines=HEARBIT_DO, name_to_assign_to_lines="HeartBeat",
+                                                line_grouping=LineGrouping.CHAN_PER_LINE)
+            
+            # Init digital input channel for trigger signal
+            task_trig.di_channels.add_di_chan(lines=TTL_DI, name_to_assign_to_lines="TTL IN",
+                                              line_grouping=LineGrouping.CHAN_PER_LINE)
 
             # Wait for trigger signal
             self.__logger.info("Waiting for trigger signal on %s", TTL_DI)
@@ -311,6 +341,9 @@ if __name__ == "__main__" :
     parser.add_argument('--log', dest="log_lvl", type=str,
                         help="The log level desired, log above chosen level will be registered",
                         choices=LOG_LEVELS.keys())
+    parser.add_argument('--disable-heartbeat', dest="disable_heartbeat",
+                        help="Used to disable heartbeat signal",
+                        action='store_true')
     args = parser.parse_args()
 
 
@@ -330,4 +363,4 @@ if __name__ == "__main__" :
                       log_file=os.path.join(os.path.dirname(__file__), LOG_FILE))
 
     # Run Stimseq
-    stimseq.run_sequence()
+    stimseq.run_sequence(enable_heartbeat=not args.disable_heartbeat)

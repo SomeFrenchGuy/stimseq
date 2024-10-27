@@ -123,7 +123,8 @@ class StimSeqGUI(Tk):
 
         # Plot the sequence column by column
         for i, (title, values) in enumerate(plotable_sequence.items()):
-            self.__axes[i].plot(timestamps, values, PLOT_STYLE)
+            self.__axes[i].clear()
+            self.__axes[i].plot(timestamps, values, PLOT_STYLE, drawstyle="steps-post")
             self.__axes[i].set_ylabel(title)
 
         # Set sequence filename as figure Title
@@ -159,8 +160,9 @@ class StimSeqGUI(Tk):
         """ Opens a window to ask the user for the sequence file
         """
 
-        path = filedialog.askopenfilename(defaultextension=".csv", initialdir=os.getcwd())
-        self.__base_seq_name = os.path.basename(path)
+        path = filedialog.askopenfilename(defaultextension=".csv",
+                                          initialdir=os.getcwd(),
+                                          filetypes=[(".csv","*.csv")])
         return path
 
     def __btn_save_plot_and_start(self) -> None:
@@ -168,7 +170,7 @@ class StimSeqGUI(Tk):
         """
         now = datetime.now()
 
-        path = filedialog.asksaveasfilename(initialfile=f"{now.strftime("%Y-%m-%d_%H.%M.%S")}-{self.__base_seq_name}.png",
+        path = filedialog.asksaveasfilename(initialfile=f"{now.strftime("%Y-%m-%d_%H.%M.%S")}-{os.path.basename(self.__sequence_path)}.png",
                                             initialdir=os.getcwd(),
                                             defaultextension="png")
         self.__figure.savefig(path)
@@ -178,12 +180,14 @@ class StimSeqGUI(Tk):
     def __btn_change_sequence_file(self) -> None:
         """Callback for changing the selected sequence file
         """
-        # Get a new sequence file and plot it
+        # Get a new sequence
         self.__sequence_path = self.__get_sequence_file_from_user()
-        self.__plot_sequence()
 
         # Load new sequence file into stimseq backend
         self.__stimseq.seq_path = self.__sequence_path
+
+        # plot new sequence
+        self.__plot_sequence()
 
     def __btn_exit_no_run(self) -> None:
         """ Callback for quitiing without reunning the sequence
