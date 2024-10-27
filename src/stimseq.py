@@ -1,3 +1,4 @@
+#pylint: disable=line-too-long
 """_summary_
 """
 import argparse
@@ -5,13 +6,15 @@ import logging
 import os
 import csv
 
+# Import File Dialog
 from tkinter import Tk, filedialog
+
 from time import sleep
 
 import nidaqmx as ni
 from nidaqmx.constants import LineGrouping, VoltageUnits
 
-VERSION = "Beta 2"
+VERSION = "Beta 5"
 COMPAT_MODELS = "USB-6001, USB-6002, USB-6003"
 DESCRIPTION = "Software to generate stimulation sequences using a NI DAQ"
 COMPATIBILITY = f"Compatible models:{COMPAT_MODELS}"
@@ -84,19 +87,44 @@ def _is_number(value:str) -> bool:
 
 
 class StimSeq():
-    """_summary_
+    """ Stimseq main class handling the logic
     """
-    def __init__(self, path_to_sequence:str, log_file:str=os.path.join(os.path.dirname(__file__), LOG_FILE), log_lvl=logging.INFO) -> None:
-        self.__seq_path = path_to_sequence
+    def __init__(
+            self,
+            path_to_sequence:str,
+            log_file:str=os.path.join(os.path.dirname(__file__), LOG_FILE),
+            log_lvl=logging.INFO
+        ) -> None:
+
+        # Save argyments as attributes
         self.__log_file = log_file
         self.__log_lvl = log_lvl
         self.__sequence:tuple[dict[str, int | float | bool]]
 
+        # Init Logger
         self.__init_logger()
 
+        # Parse the Sequence
+        self.seq_path = path_to_sequence
+
+    @property
+    def seq_path(self) -> str:
+        """ Reader for __seq_path """
+        return self.__seq_path
+
+    @seq_path.setter
+    def seq_path(self, path_to_sequence:str) -> None:
+        """ Setter for __seq_path """
+        # Raise error if invalid path
+        if not os.path.isfile(path_to_sequence):
+            raise argparse.ArgumentTypeError(f"{path_to_sequence} is not a valid path")
+
+        self.__seq_path = path_to_sequence
+
+        # Parse sequence when sequence path is changed
         self._parse_sequence()
 
-    def __init_logger(self):
+    def __init_logger(self) -> None:
         # Create a logger
         self.__logger = logging.getLogger('my_logger')
         self.__logger.setLevel(self.__log_lvl)
@@ -119,11 +147,6 @@ class StimSeq():
         self.__logger.addHandler(console_handler)
 
     @property
-    def seq_path(self) -> str:
-        """ Reader for __seq_path """
-        return self.__seq_path
-
-    @property
     def logger(self) -> logging.Logger:
         """ Reader for __logger """
         return self.__logger
@@ -139,7 +162,7 @@ class StimSeq():
         return self.__log_lvl
 
     @property
-    def sequence(self) -> dict[str, tuple[int]]:
+    def sequence(self) -> tuple[dict[str, int | float | bool]]:
         """ Reader for __sequence """
         return self.__sequence
 
@@ -196,6 +219,7 @@ class StimSeq():
                 for step in self.__sequence:
                     self.__logger.debug("Parsed sequence: %s", step)
 
+    #pylint: disable=too-many-locals
     def run_sequence(self) -> None:
         """ Execute the sequence from the computer """
 
@@ -219,10 +243,10 @@ class StimSeq():
             for i, step in enumerate(self.__sequence):
                 print(f"step {i} : {step}")
                 time_data.append((step[TIMESTAMP] - self.__sequence[i - 1][TIMESTAMP]) if i else step[TIMESTAMP])
-                
+
                 for key in do_data_keys:
                     do_data.append(step[key])
-                
+
                 for key in ao_data_keys:
                     ao_data.append(step[key])
             self.__logger.debug("time_data: %s", time_data)
@@ -236,7 +260,7 @@ class StimSeq():
             if not all((seq_size == len(ao_data)/ao_data_step_size, len(do_data)/do_data_step_size)):
                 self.__logger.critical("Incoherent size between prepared output data")
                 raise ValueError
-            
+
 
             # Init DAQ channels
             self.__logger.info("Init DAQ Channels")
@@ -248,7 +272,7 @@ class StimSeq():
                                               line_grouping=LineGrouping.CHAN_PER_LINE)
             task_ao.ao_channels.add_ao_voltage_chan(physical_channel=LED_AO, name_to_assign_to_channel="LED",
                                                     min_val=0, max_val=10, units=VoltageUnits.VOLTS)
-    
+
             # Wait for trigger signal
             self.__logger.info("Waiting for trigger signal on %s", TTL_DI)
             trig = 0
@@ -263,9 +287,8 @@ class StimSeq():
                 task_ao.write(ao_data[i*ao_data_step_size : i*ao_data_step_size + ao_data_step_size])
                 self.__logger.debug("Sent do: %s", do_data[i*do_data_step_size : i*do_data_step_size + do_data_step_size])
                 self.__logger.debug("Sent ao: %s", ao_data[i*ao_data_step_size : i*ao_data_step_size + ao_data_step_size])
-           
-            self.__logger.info("Finished sending sequence")
 
+            self.__logger.info("Finished sending sequence")
 
 # Method to validate a path given through command line
 def _file_path(file_path:str) -> str:
@@ -273,6 +296,8 @@ def _file_path(file_path:str) -> str:
         return file_path
 
     raise argparse.ArgumentTypeError(f"{file_path} is not a valid path")
+
+
 
 # Execute when this file is executed directly
 if __name__ == "__main__" :
@@ -294,11 +319,14 @@ if __name__ == "__main__" :
         root = Tk()
         root.withdraw()
 
-        args.seq_path = filedialog.askopenfilename(defaultextension=".csv", initialdir=os.getcwd())
+        # Ask User to select the sequence file
+        args.seq_path = filedialog.askopenfilename(defaultextension=".csv",
+                                                   initialdir=os.getcwd(),
+                                                   filetypes=[(".csv","*.csv")])
 
     # Init stimseq
     stimseq = StimSeq(path_to_sequence=args.seq_path,
-                      log_lvl=LOG_LEVELS[args.log_lvl or "INFO"],
+                      log_lvl=LOG_LEVELS[args.log_lvl or "DEBUG"],
                       log_file=os.path.join(os.path.dirname(__file__), LOG_FILE))
 
     # Run Stimseq

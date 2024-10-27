@@ -1,6 +1,6 @@
 # StimSeq
 
-This repo is destined to hold code and documentation for a project made for a team of researcher at the CNRS of Paris Saclay.
+This repo is destined to hold code and documentation for a the Stimseq Project.
 
 Its purpose is to allow the generation of stimulation sequence using a NIDAQ USB-6001
 
@@ -10,14 +10,18 @@ Its purpose is to allow the generation of stimulation sequence using a NIDAQ USB
 - Extract the archive to where you want pipreq to be installed
 - Run the script `setup_env.bat` to setup The environment for StimSeq
 
-## Running StimSeq
+## Running StimSeq GUI
 
-To run stimseq, multiple options are possible.
+StimSeq Graphical User Interface (GUI) will plot the selected sequence. It allows the user to change file, save the plot and run the sequence, or quit without running the sequence.
+
+To run StimSeq with a GUI, multiple options are possible.
 
 ### From batch file
 
-- Double click on `start_stimseq.bat`
+- Double click on `start_stimseq_gui.bat`
 - Select the sequence file from the popup Window
+- A GUI appears with a plot showwing the selected sequence
+- Click on `Save Plot and start sequence` to Run the sequence
 
 ### From PowerShell
 
@@ -25,7 +29,39 @@ After opening a shell and going to the installation directory of StimSeq :
 
 ```batch
 .\.env\Scripts\Activate.ps1
-python .\stimseq.py --path <path_to_sequence_file>
+python .\stimseq_gui.py --log INFO
+```
+
+You can also use `python .\stimseq_gui.py --help` to display more informations on usage.
+
+### From a Python Script
+
+```python
+from stimseq_gui import StimSeqGUI
+
+stimseq_gui = StimSeqGUI()
+
+stimseq_gui.mainloop()
+```
+
+## Running StimSeq without the GUI
+
+To run StimSeq without the GUI, multiple options are possible.
+
+***Note:** The sequence selected will be exectued without plotting it or asking for confirmation*
+
+### From batch file
+
+- Double click on `start_stimseq_gui.bat`
+- Select the sequence file from the popup Window
+
+### From PowerShell 
+
+After opening a shell and going to the installation directory of StimSeq :
+
+```batch
+.\.env\Scripts\Activate.ps1
+python .\stimseq.py --path <path_to_sequence_file> --log INFO
 ```
 
 You can also use `python .\stimseq.py --help` to display more informations on usage.
@@ -94,7 +130,7 @@ The file `requirements.txt` contains the information needed to setup the Python 
 
 ### External Documentation
 
-- [NIdaqmx python package](https://nidaqmx-python.readthedocs.io/en/stable/#installation) 
+- [NIdaqmx python package](https://nidaqmx-python.readthedocs.io/en/stable/#installation)
 - [Using NI-DAQmx in Text Based Programming Environments](https://www.ni.com/en/support/documentation/supplemental/21/using-ni-daqmx-in-text-based-programming-environments.html)
 - [USB-6001 Specifications](https://www.ni.com/docs/en-US/bundle/usb-6001-specs/resource/374369a.pdf)
 - [TCS SP8 MP Multiphoton Microscope](https://www.leica-microsystems.com/products/confocal-microscopes/p/leica-tcs-sp8-mp/downloads/)
