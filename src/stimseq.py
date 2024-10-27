@@ -14,7 +14,7 @@ from time import sleep
 import nidaqmx as ni
 from nidaqmx.constants import LineGrouping, VoltageUnits
 
-VERSION = "Beta 5"
+VERSION = "V1.0"
 COMPAT_MODELS = "USB-6001, USB-6002, USB-6003"
 DESCRIPTION = "Software to generate stimulation sequences using a NI DAQ"
 COMPATIBILITY = f"Compatible models:{COMPAT_MODELS}"
@@ -311,7 +311,7 @@ class StimSeq():
             # Init Analog Output Channels
             # OUTPUT_ADDITION_SECTION
             task_ao.ao_channels.add_ao_voltage_chan(physical_channel=LED_AO, name_to_assign_to_channel="LED",
-                                                    min_val=min(AO_RANGE), max_val=min(AO_RANGE), units=VoltageUnits.VOLTS)
+                                                    min_val=min(AO_RANGE), max_val=max(AO_RANGE), units=VoltageUnits.VOLTS)
 
             # Add Heartbeat to digital output channels
             if enable_heartbeat:

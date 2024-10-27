@@ -24,8 +24,10 @@ EXIT
 IF EXIST bin ECHO Y | RMDIR /s bin
 ECHO "Copying file"
 COPY setup_env.bat ..\bin\setup_env.bat
-COPY start_stimseq.bat ..\bin\start_stimseq.bat
+COPY start_stimseq_gui.bat ..\bin\start_stimseq_gui.bat
+COPY start_stimseq_no_gui.bat ..\bin\start_stimseq_no_gui.bat
 COPY ..\src\stimseq.py ..\bin\stimseq.py
+COPY ..\src\stimseq_gui.py ..\bin\stimseq_gui.py
 COPY ..\requirements.txt ..\bin\requirements.txt
 COPY ..\doc ..\bin\doc
 

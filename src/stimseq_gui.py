@@ -18,7 +18,7 @@ import stimseq
 
 
 # Const for plotting sequence
-PLOT_STYLE = 'bo-'  #blue, dots, contiguous line
+PLOT_STYLE = 'bo-'  #blue, dots, contiguous line (see matplolib documention)
 
 
 class StimSeqGUI(Tk):
@@ -142,11 +142,11 @@ class StimSeqGUI(Tk):
         # Display the window
         ws = self.winfo_screenwidth()
         hs = self.winfo_screenheight()
-        x1 = int(ws*1/4)
-        y1 = int(hs*1/3)
-        x2 = int(ws*3/4) - x1
-        y2 = int(hs*2/3) - y1
-        self.geometry(f"{x2}x{y1}+{x1}+{y2}")
+        x1 = int(ws*1/3)
+        y1 = int(hs*1/6)
+        x2 = int(ws*2/3) - x1
+        y2 = int(hs*5/6) - y1
+        self.geometry(f"{x2}x{y2}+{x1}+{y1}")
         self.wm_deiconify()
 
         # Wait for user input
